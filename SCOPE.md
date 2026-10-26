@@ -3,7 +3,8 @@
 Working name: **Delve Companion**. RuneLite external plugin (Plugin Hub target) that helps players
 complete the Doom of Mokhaiotl delves (levels 1–8 and deep delves 9+).
 
-Status: scoping. Nothing implemented yet.
+Status: F2 (risk/reward), F4 (debrief) and hotkey-started shockwave/rock timers are implemented; not yet
+checked in-game. Built for personal use (not for Plugin Hub submission). See README.md.
 
 ---
 
