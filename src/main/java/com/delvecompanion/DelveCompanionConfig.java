@@ -1,5 +1,7 @@
 package com.delvecompanion;
 
+import java.awt.Color;
+import net.runelite.client.config.Alpha;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -35,9 +37,17 @@ public interface DelveCompanionConfig extends Config
 	String timerSection = "timers";
 
 	@ConfigSection(
+		name = "Recolour (grey area)",
+		description = "Recolour graphics the game already draws. Off by default; not covered by the rules either way",
+		position = 3,
+		closedByDefault = true
+	)
+	String recolorSection = "recolor";
+
+	@ConfigSection(
 		name = "Developer",
 		description = "Calibration tools",
-		position = 3,
+		position = 4,
 		closedByDefault = true
 	)
 	String devSection = "dev";
@@ -166,6 +176,80 @@ public interface DelveCompanionConfig extends Config
 	default int rockTicks()
 	{
 		return 7;
+	}
+
+	@ConfigItem(
+		keyName = "recolorRockShadows",
+		name = "Recolour rock shadows",
+		description = "Recolour the falling-rock graphics the game draws (including their shadows)",
+		section = recolorSection,
+		position = 0
+	)
+	default boolean recolorRockShadows()
+	{
+		return false;
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "rockShadowColor",
+		name = "Rock shadow colour",
+		description = "Colour for the rock graphics",
+		section = recolorSection,
+		position = 1
+	)
+	default Color rockShadowColor()
+	{
+		return new Color(255, 105, 180);
+	}
+
+	@ConfigItem(
+		keyName = "rockShadowMode",
+		name = "Rock recolour mode",
+		description = "Whole graphic, or only its dark faces (the shadow part, if the shadow is part of the rock model)",
+		section = recolorSection,
+		position = 2
+	)
+	default ModelRecolorer.Mode rockShadowMode()
+	{
+		return ModelRecolorer.Mode.WHOLE_GRAPHIC;
+	}
+
+	@ConfigItem(
+		keyName = "rockShadowIds",
+		name = "Rock graphic IDs",
+		description = "Graphic/projectile IDs to recolour, e.g. 3388-3403, 3404. Use Developer > Log Doom events to find the shadow's ID",
+		section = recolorSection,
+		position = 3
+	)
+	default String rockShadowIds()
+	{
+		return "3388-3403";
+	}
+
+	@ConfigItem(
+		keyName = "recolorAcid",
+		name = "Recolour acid",
+		description = "Recolour the acid blood pools the game draws",
+		section = recolorSection,
+		position = 4
+	)
+	default boolean recolorAcid()
+	{
+		return false;
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "acidColor",
+		name = "Acid colour",
+		description = "Colour for acid pools",
+		section = recolorSection,
+		position = 5
+	)
+	default Color acidColor()
+	{
+		return new Color(0, 255, 255);
 	}
 
 	@ConfigItem(

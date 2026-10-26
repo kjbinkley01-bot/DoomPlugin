@@ -32,6 +32,11 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
+import net.runelite.api.GameObject;
+import net.runelite.api.GraphicsObject;
+import net.runelite.api.GroundObject;
+import net.runelite.api.Model;
+import net.runelite.api.Renderable;
 import net.runelite.api.ActorSpotAnim;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -47,6 +52,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ActorDeath;
 import net.runelite.api.events.AnimationChanged;
+import net.runelite.api.events.BeforeRender;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
@@ -80,6 +86,7 @@ import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
@@ -184,6 +191,8 @@ public class DelveCompanionPlugin extends Plugin
 	private final HitClassifier classifier = new HitClassifier();
 	private final List<PendingHit> pendingHits = new ArrayList<>();
 	private final Set<WorldPoint> acidTiles = new HashSet<>();
+	private final Set<TileObject> acidObjects = new HashSet<>();
+	private Set<Integer> rockShadowIds = Collections.emptySet();
 	private final Set<Projectile> seenProjectiles = Collections.newSetFromMap(new WeakHashMap<>());
 	private final Set<NPC> deadLarvae = Collections.newSetFromMap(new WeakHashMap<>());
 	private final Deque<DelveRecord> history = new ArrayDeque<>();
@@ -226,6 +235,7 @@ public class DelveCompanionPlugin extends Plugin
 		overlayManager.add(timerOverlay);
 		keyManager.registerKeyListener(shockwaveHotkey);
 		keyManager.registerKeyListener(rockHotkey);
+		rockShadowIds = ModelRecolorer.parseIds(config.rockShadowIds());
 		updatePanel();
 	}
 
@@ -306,6 +316,7 @@ public class DelveCompanionPlugin extends Plugin
 		classifier.reset();
 		pendingHits.clear();
 		acidTiles.clear();
+		acidObjects.clear();
 		seenProjectiles.clear();
 		deadLarvae.clear();
 		boss = null;
@@ -727,6 +738,7 @@ public class DelveCompanionPlugin extends Plugin
 		if (inDelve && ACID_IDS.contains(object.getId()))
 		{
 			acidTiles.add(object.getWorldLocation());
+			acidObjects.add(object);
 		}
 	}
 
@@ -735,7 +747,79 @@ public class DelveCompanionPlugin extends Plugin
 		if (ACID_IDS.contains(object.getId()))
 		{
 			acidTiles.remove(object.getWorldLocation());
+			acidObjects.remove(object);
 		}
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event)
+	{
+		if (event.getGroup().equals(DelveCompanionConfig.GROUP) && event.getKey().equals("rockShadowIds"))
+		{
+			rockShadowIds = ModelRecolorer.parseIds(config.rockShadowIds());
+		}
+	}
+
+	/**
+	 * Recolours graphics the game is drawing this frame. Only things already on screen are touched,
+	 * so nothing appears earlier or anywhere the game doesn't already show it.
+	 */
+	@Subscribe
+	public void onBeforeRender(BeforeRender event)
+	{
+		if (!inDelve)
+		{
+			return;
+		}
+		if (config.recolorRockShadows() && !rockShadowIds.isEmpty())
+		{
+			short hsl = ModelRecolorer.toHsl(config.rockShadowColor());
+			ModelRecolorer.Mode mode = config.rockShadowMode();
+			WorldView wv = client.getTopLevelWorldView();
+			if (wv != null)
+			{
+				for (GraphicsObject graphic : wv.getGraphicsObjects())
+				{
+					if (rockShadowIds.contains(graphic.getId()))
+					{
+						ModelRecolorer.recolor(graphic.getModel(), hsl, mode);
+					}
+				}
+			}
+			for (Projectile projectile : client.getProjectiles())
+			{
+				if (rockShadowIds.contains(projectile.getId()))
+				{
+					ModelRecolorer.recolor(projectile.getModel(), hsl, mode);
+				}
+			}
+		}
+		if (config.recolorAcid() && !acidObjects.isEmpty())
+		{
+			short hsl = ModelRecolorer.toHsl(config.acidColor());
+			for (TileObject acid : acidObjects)
+			{
+				ModelRecolorer.recolor(modelOf(acid), hsl, ModelRecolorer.Mode.WHOLE_GRAPHIC);
+			}
+		}
+	}
+
+	private static Model modelOf(TileObject object)
+	{
+		Renderable renderable = null;
+		if (object instanceof GameObject)
+		{
+			renderable = ((GameObject) object).getRenderable();
+		}
+		else if (object instanceof GroundObject)
+		{
+			renderable = ((GroundObject) object).getRenderable();
+		}
+		if (renderable instanceof Model)
+		{
+			return (Model) renderable;
+		}
+		return renderable == null ? null : renderable.getModel();
 	}
 
 	@Subscribe

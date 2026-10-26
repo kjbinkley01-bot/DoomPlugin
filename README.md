@@ -31,6 +31,19 @@ You start these yourself, the same way the wiki recommends using Visual Metronom
 Bind the keys under *Manual timers* in the plugin config (they're unbound by default). Use keys you don't type
 with, such as F-keys, because the key press still reaches the game.
 
+### Recolour (grey area, off by default)
+These change the colour of graphics the game already draws. They add no new markers, and nothing shows up earlier or
+anywhere the game doesn't already show it. Jagex's rules neither allow nor ban this explicitly.
+- **Rock shadows:** recolours the falling-rock graphics (pink by default). The default IDs (3388-3403) are the
+  falling-rock projectiles. If the shadow turns out to be a separate graphic, find its ID with
+  *Log Doom events* and put it in **Rock graphic IDs**. If the shadow is part of the rock model, switch
+  **Rock recolour mode** to *Dark faces only* so just the shadow changes colour.
+- **Acid:** recolours the acid blood pools (cyan by default).
+
+Recolouring edits the game's cached models, so a colour can stay after you turn it off, until the area reloads
+(for example, the next delve or a relog). This hasn't been checked in-game yet; if nothing changes colour, the
+graphic is probably rebuilt every frame and needs a different approach.
+
 ## Running it
 
 Requires Java 11+.
